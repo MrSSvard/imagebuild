@@ -41,7 +41,7 @@ jobs:
 
       - name: Create chunked OCI image for ostree
         # podman unshare is needed to run rpm-ostree which requires specific user namespace capabilities
-        run: podman unshare rpm-ostree compose build-chunked-oci --bootc --from ${{ env.IMAGE_NAME }}-unchunked--output containers-storage:${{ env.IMAGE_NAME }}-unchunked
+        run: podman unshare rpm-ostree compose build-chunked-oci --bootc --from ${{ env.IMAGE_NAME }}-unchunked --output containers-storage:${{ env.IMAGE_NAME }}
 
       #- name: Push chunked image to Docker Hub
-      #  run: podman push ${{ env.IMAGE_REPO }}-silverblue
+      #  run: podman push ${{ env.IMAGE_NAME }}
