@@ -1,61 +1,47 @@
 # Save this file as .github/workflows/ostree-build.yml in your repository
 
-name: Build and Push Ostree Container Image
+name: Build and Push Ostree Container Images
 
 on:
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-  # Also trigger on push to main branch if the Containerfile changes
   push:
     branches:
       - main
-    paths:
-      - 'silverblue/Containerfile'
-
-env:
-  # The name of your custom image
-  IMAGE_NAME: silverblue
-  # The full repository path on Docker Hub
-  #IMAGE_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
-  IMAGE_REPO: hej/hoj
 
 jobs:
   build-and-push:
+    strategy:
+      matrix:
+        variant: [silverblue]
+  
+    env:
+      IMAGE_NAME: ${{ vars.IMAGE_REPO_BASE }}${{ matrix.variant }}
+
     name: Build and Push Ostree Image
-    # Use the latest version of Ubuntu as the base runner
     runs-on: ubuntu-latest
     
-    # Run the job steps inside a Fedora container to get easy access to podman and rpm-ostree
     container:
-      image: quay.io/fedora/fedora:latest
+      image: ${{ vars.BUILDER_IMAGE }}:latest
       # --privileged is required for running podman build within a container
       options: --privileged --user 1000
 
     steps:
-      - name: Install Dependencies
-        run: |
-          echo "Installing podman, rpm-ostree, and git..."
-          sudo dnf install -y podman rpm-ostree git
-        shell: bash
-
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      #- name: Login to Docker Hub
-      #  # Use secrets to avoid exposing credentials in logs
-      #  run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | podman login docker.io -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-      #  shell: bash
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PAT }}
 
       - name: Build unchunked container image
-        working-directory: silverblue
-        run: podman build . --pull=always -t ${{ env.IMAGE_REPO }}-unchunked
-        shell: bash
+        working-directory: ${{ matrix.variant }}
+        run: podman build . --pull=always -t ${{ env.IMAGE_NAME }}-unchunked
 
       - name: Create chunked OCI image for ostree
         # podman unshare is needed to run rpm-ostree which requires specific user namespace capabilities
-        run: podman unshare rpm-ostree compose build-chunked-oci --bootc --from ${{ env.IMAGE_REPO }}-unchunked --output containers-storage:${{ env.IMAGE_REPO }}
-        shell: bash
+        run: podman unshare rpm-ostree compose build-chunked-oci --bootc --from ${{ env.IMAGE_NAME }}-unchunked--output containers-storage:${{ env.IMAGE_NAME }}-unchunked
 
       #- name: Push chunked image to Docker Hub
-      #  run: podman push ${{ env.IMAGE_REPO }}
-      #  shell: bash
+      #  run: podman push ${{ env.IMAGE_REPO }}-silverblue
