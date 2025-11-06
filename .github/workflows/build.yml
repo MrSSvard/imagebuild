@@ -17,7 +17,7 @@ env:
   IMAGE_NAME: silverblue
   # The full repository path on Docker Hub
   #IMAGE_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
-  IMAGE_REPO: hej/${{ env.IMAGE_NAME }}
+  IMAGE_REPO: hej/hoj
 
 jobs:
   build-and-push:
