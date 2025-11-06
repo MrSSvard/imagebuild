@@ -23,7 +23,7 @@ jobs:
     container:
       image: ${{ vars.BUILDER_IMAGE }}:latest
       # --privileged is required for running podman build within a container
-      options: --privileged --user 1000
+      options: --privileged
 
     steps:
       - name: Check out repository code
@@ -37,11 +37,11 @@ jobs:
 
       - name: Build unchunked container image
         working-directory: ${{ matrix.variant }}
-        run: podman build . --pull=always -t ${{ env.IMAGE_NAME }}-unchunked
+        run: su builder -c 'podman build . --pull=always -t ${{ env.IMAGE_NAME }}-unchunked'
 
       - name: Create chunked OCI image for ostree
         # podman unshare is needed to run rpm-ostree which requires specific user namespace capabilities
-        run: podman unshare rpm-ostree compose build-chunked-oci --bootc --from ${{ env.IMAGE_NAME }}-unchunked --output containers-storage:${{ env.IMAGE_NAME }}
+        run: su builder -c 'podman unshare rpm-ostree compose build-chunked-oci --bootc --from ${{ env.IMAGE_NAME }}-unchunked --output containers-storage:${{ env.IMAGE_NAME }}'
 
       #- name: Push chunked image to Docker Hub
       #  run: podman push ${{ env.IMAGE_NAME }}
