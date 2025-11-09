@@ -12,33 +12,24 @@ jobs:
   build-and-push:
     strategy:
       matrix:
-        variant: [silverblue]
+        variant: [ silverblue, silverblue-desktop ]
   
     env:
-      IMAGE_NAME: ${{ vars.IMAGE_REPO_BASE }}${{ matrix.variant }}
+      IMAGE_NAME: ${{ vars.IMAGE_REPO_BASE }}/${{ matrix.variant }}
 
-    name: Build and Push Ostree Image
+    name: Build and Push ${{ matrix.variant }} Image
     runs-on: ubuntu-latest
-    
-    container:
-      image: ${{ vars.BUILDER_IMAGE }}:latest
-      # --privileged is required for running podman build within a container
-      options: --privileged
 
     steps:
-      - name: Check out repository code
+      - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Login to registry
-        run: su builder -c 'podman login -u=${{ vars.DOCKER_HUB_USER }} -p=${{ secrets.DOCKER_HUB_PAT }} ${{ vars.DOCKER_REGISTRY }}'
+        run: buildah login -u=${{ vars.DOCKER_HUB_USER }} -p=${{ secrets.DOCKER_HUB_PAT }} ${{ vars.DOCKER_REGISTRY }}
 
-      - name: Build unchunked container image
+      - name: Build image
         working-directory: ${{ matrix.variant }}
-        run: su builder -c 'podman build . --pull=always -t ${{ env.IMAGE_NAME }}-unchunked'
+        run: buildah bud --pull=always --squash --format oci -t ${{ env.IMAGE_NAME }}
 
-      - name: Create chunked OCI image for ostree
-        # podman unshare is needed to run rpm-ostree which requires specific user namespace capabilities
-        run: su builder -c 'podman unshare rpm-ostree compose build-chunked-oci --bootc --from ${{ env.IMAGE_NAME }}-unchunked --output containers-storage:${{ env.IMAGE_NAME }}'
-
-      #- name: Push chunked image to Docker Hub
-      #  run: podman push ${{ env.IMAGE_NAME }}
+      - name: Push image to registry
+        run: buildah push  --compression-format zstd:chunked ${{ env.IMAGE_NAME }}

@@ -4,6 +4,6 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\nautorefresh=1\ntype=rpm-md\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
 
 RUN dnf remove -y firefox firefox-langpacks && \
-    dnf install -y code gnome-tweaks ncdu papirus-icon-theme tilix tilix-nautilus zenity
+    dnf install -y code gnome-tweaks ncdu papirus-icon-theme tilix tilix-nautilus zenity miopen rocblas-devel rocm-comgr-devel rocm-smi hipblas-devel hipblaslt-devel hipcc python3.10
 
 RUN ostree container commit
