@@ -29,7 +29,11 @@ jobs:
 
       - name: Build image
         working-directory: ${{ matrix.variant }}
-        run: buildah bud --pull=always --squash --format oci -t ${{ env.IMAGE_NAME }}
+        run: buildah bud --pull=always --format oci -t ${{ env.IMAGE_NAME }}
 
       - name: Push image to registry
         run: buildah push  --compression-format zstd:chunked ${{ env.IMAGE_NAME }}
+      
+      - name: Logout from registry
+        if: always()
+        run: buildah logout
